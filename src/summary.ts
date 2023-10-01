@@ -4,9 +4,17 @@ import {
   filterInvalidDates,
   sortDates,
   relativeDates,
+  ValidDate,
 } from "./helpers";
+import dayjs from "dayjs";
 
-function summary(datesParam = []) {
+export type SummaryParams =
+  | ValidDate[]
+  | {
+      dates: ValidDate[];
+    };
+
+function summary(datesParam: SummaryParams) {
   const dates = getDatesParameter(datesParam);
   const { today, yesterday } = relativeDates();
   const allDates = filterInvalidDates(dates);
@@ -14,9 +22,9 @@ function summary(datesParam = []) {
 
   const result = sortedDates.reduce(
     (acc, date, index) => {
-      const first = new Date(date);
+      const first = dayjs(date);
       const second = sortedDates[index + 1]
-        ? new Date(sortedDates[index + 1])
+        ? dayjs(sortedDates[index + 1])
         : first;
       const diff = differenceInDays(second, first);
       const isToday = acc.isToday || differenceInDays(date, today) === 0;
