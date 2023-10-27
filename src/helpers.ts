@@ -1,5 +1,5 @@
 import dayjs, { Dayjs } from "dayjs";
-import { SummaryParams } from "./summary";
+import { SummaryParams } from "../summary_old";
 
 export type ValidDate = string | number | Date | Dayjs;
 export type AcceptedDateInput = ValidDate[] | { dates: ValidDate[] };
@@ -20,16 +20,21 @@ export const relativeDates = () => ({
   tomorrow: startOfDay(addDays(new Date(), 1)),
 });
 
-export const filterInvalidDates = (dates: ValidDate[]) =>
+export const differenceInDays = (later: Date, earlier: Date) => {
+  const date = dayjs(later);
+  return date.diff(earlier, "day");
+};
+
+export const filterInvalidDates = (dates: Date[]) =>
   dates.filter((date) =>
     !isValid(dayjs(date))
       ? console.error(
-          `The date '${date}' is not in a valid date format and date-streaks is ignoring it. Browsers do not consistently support this and this package's results may fail. Verify the array of dates you're passing to date-streaks are all valid date strings. http://momentjs.com/docs/#/parsing/string/`
+          `The date '${date}' is not in a valid date format and date-streaks is ignoring it.`
         )
-      : dayjs(date)
+      : new Date(date)
   );
 
-export const sortDates = (dates: ValidDate[]) => {
+export const sortDates = (dates: Date[]) => {
   return dates
     .sort(function (a, b) {
       //! unsafe

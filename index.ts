@@ -1,5 +1,4 @@
-import summary from "./src/summary";
-import streakRanges from "./src/streak-ranges";
-import trackRecord from "./src/track-record";
+import { differenceInDays } from "./src/helpers";
+import { summary } from "./src/summary";
 
-export { summary, streakRanges, trackRecord };
+export { summary, differenceInDays };

@@ -1,61 +1,50 @@
-import differenceInDays from "date-fns/difference_in_days";
-import {
-  getDatesParameter,
-  filterInvalidDates,
-  sortDates,
-  relativeDates,
-  ValidDate,
-} from "./helpers";
-import dayjs from "dayjs";
+import { differenceInDays, relativeDates, sortDates } from "./helpers";
 
-export type SummaryParams =
-  | ValidDate[]
-  | {
-      dates: ValidDate[];
-    };
-
-function summary(datesParam: SummaryParams) {
-  const dates = getDatesParameter(datesParam);
+export function summary(
+  dateParams: Date[] = [],
+  callback?: (...args: any[]) => {
+    shouldIncrement: boolean;
+    shouldSkip: boolean;
+  }
+) {
   const { today, yesterday } = relativeDates();
-  const allDates = filterInvalidDates(dates);
-  const sortedDates = sortDates(allDates);
+  const sortedDates = sortDates(dateParams);
 
   const result = sortedDates.reduce(
-    (acc, date, index) => {
-      const first = dayjs(date);
-      const second = sortedDates[index + 1]
-        ? dayjs(sortedDates[index + 1])
-        : first;
-      const diff = differenceInDays(second, first);
-      const isToday = acc.isToday || differenceInDays(date, today) === 0;
-      const isYesterday =
-        acc.isYesterday || differenceInDays(date, yesterday) === 0;
-      const isInFuture = acc.isInFuture || differenceInDays(today, date) < 0;
+    (prev, curr, index) => {
+      const firstDate = new Date(curr);
+      const __nextV = dateParams[index + 1];
+      const nextDate = __nextV ? new Date(__nextV) : firstDate;
 
-      if (diff === 0) {
-        if (isToday) {
-          acc.todayInStreak = true;
+      const isToday = differenceInDays(firstDate, today) === 0;
+      const isYesterday = differenceInDays(firstDate, yesterday) === 0;
+      const isInFuture = differenceInDays(today, firstDate) < 0;
+
+      const diff = differenceInDays(nextDate, firstDate);
+
+      const currentStreak = prev.streaks[prev.streaks.length - 1] ?? 0;
+
+      if (typeof callback !== "function") {
+        if (diff === 0) {
+          // if (isToday) {
+          //   prev.todayInStreak = true;
+          // }
+        } else {
+          diff === 1
+            ? ++prev.streaks[prev.streaks.length - 1]
+            : prev.streaks.push(1);
         }
       } else {
-        diff === 1
-          ? ++acc.streaks[acc.streaks.length - 1]
-          : acc.streaks.push(1);
+        const { shouldIncrement, shouldSkip } = callback(firstDate, nextDate);
+
+        if (shouldIncrement) ++prev.streaks[prev.streaks.length - 1];
+        if (shouldSkip) prev.streaks.push(1);
       }
 
       return {
-        ...acc,
-        longestStreak: Math.max(...acc.streaks),
-        withinCurrentStreak:
-          acc.isToday ||
-          acc.isYesterday ||
-          acc.isInFuture ||
-          isToday ||
-          isYesterday ||
-          isInFuture,
-        currentStreak:
-          isToday || isYesterday || isInFuture
-            ? acc.streaks[acc.streaks.length - 1]
-            : 0,
+        ...prev,
+        currentStreak,
+        longestStreak: Math.max(...prev.streaks),
         isInFuture,
         isYesterday,
         isToday,
@@ -65,17 +54,12 @@ function summary(datesParam: SummaryParams) {
       currentStreak: 0,
       longestStreak: 0,
       streaks: [1],
-      todayInStreak: false,
-      withinCurrentStreak: false,
       isInFuture: false,
-      isToday: false,
       isYesterday: false,
+      isToday: false,
+      // todayInStreak: false,
     }
   );
 
-  const { isToday, isYesterday, isInFuture, ...rest } = result;
-
-  return rest;
+  return result;
 }
-
-export default summary;
