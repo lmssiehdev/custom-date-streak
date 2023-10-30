@@ -7,9 +7,9 @@ export type AcceptedDateInput = ValidDate[] | { dates: ValidDate[] };
 export const startOfDay = (date: ValidDate) =>
   dayjs(date).startOf("day").toDate();
 export const subDays = (date: ValidDate, value: number) =>
-  dayjs(date).subtract(value, "day");
+  dayjs(date).subtract(value, "day").toDate();
 export const addDays = (date: ValidDate, value: number) =>
-  dayjs(date).add(value, "day");
+  dayjs(date).add(value, "day").toDate();
 
 export const endOfWeek = (date: ValidDate) => dayjs(date).endOf("week");
 export const isValid = (date: ValidDate) => dayjs(date).isValid();

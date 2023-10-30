@@ -1,7 +1,13 @@
+import { addDays } from "./../src/helpers";
 import { describe, expect, it } from "vitest";
 import { summary } from "../src/summary";
-import { differenceInDays, startOfDay, subDays } from "../src/helpers";
-import dayjs from "dayjs";
+import {
+  differenceInDays,
+  relativeDates,
+  startOfDay,
+  subDays,
+} from "../src/helpers";
+import dayjs, { Dayjs } from "dayjs";
 
 var customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
@@ -11,7 +17,7 @@ describe("summury rewrite", () => {
     var today = startOfDay(new Date());
     var result = summary([
       new Date(today),
-      new Date(subDays(today, 1).toDate()),
+      new Date(subDays(today, 1)),
       new Date("01/01/2018"),
       new Date("01/02/2018"),
       new Date("01/03/2018"),
@@ -65,7 +71,53 @@ describe("summury rewrite", () => {
     expect(continousStreak.streaks).toStrictEqual([4]);
   });
 
-  // temp tests
+  it("it should calculate the current streak correctly", () => {
+    const notACurrentStreak = summary([
+      new Date("01/01/2018"),
+      new Date("01/02/2018"),
+      new Date("01/03/2018"),
+      new Date("01/04/2018"),
+    ]);
+    expect(notACurrentStreak.currentStreak).toBe(0);
+
+    const { today, yesterday } = relativeDates();
+
+    const aCurrentStreak = summary([
+      new Date("01/01/2018"),
+      new Date("01/02/2018"),
+      today,
+      yesterday,
+    ]);
+    expect(aCurrentStreak.currentStreak).toBe(2);
+  });
+
+  it("should correctly handle future days in streak counting", () => {
+    const { today, tomorrow, yesterday } = relativeDates();
+
+    const doesNotIncludeFutureDays = summary(
+      [
+        new Date("10/11/2018"),
+        new Date("10/10/2018"),
+        yesterday,
+        today,
+        // future below would not be counted
+        tomorrow,
+        addDays(tomorrow, 1) as unknown as Date,
+        addDays(tomorrow, 2) as unknown as Date,
+        addDays(tomorrow, 3) as unknown as Date,
+      ],
+      (first, last) => {
+        const result = differenceInDays(last, first);
+        const isInTheFuture = differenceInDays(today, last) < 0;
+        return {
+          shouldIncrement: result === 1 && !isInTheFuture,
+          shouldSkip: result !== 1 && result !== 0 && !isInTheFuture,
+        };
+      }
+    );
+    expect(doesNotIncludeFutureDays.streaks).toStrictEqual([2, 2]);
+  });
+
   it("should accept a callback function", () => {
     const summaryWithoutCallaback = summary([
       new Date("01/01/2018"),
@@ -104,6 +156,27 @@ describe("summury rewrite", () => {
       "01/10/2018": "skipped",
       "01/11/2018": "checked",
     };
+
+    const __ = summary(
+      [
+        new Date("01/01/2018"),
+        // Day 2 is missing but it did not break the sreak
+        new Date("01/03/2018"),
+        new Date("01/10/2018"),
+        new Date("01/11/2018"),
+      ],
+      (first, last) => {
+        const result = differenceInDays(last, first);
+
+        return {
+          shouldIncrement: result === 2 || result === 1,
+          shouldSkip: result > 2 && result !== 0,
+        };
+      }
+    );
+
+    console.log(__);
+    expect(__.streaks).toStrictEqual([2, 2]);
 
     const onlyBreakStreakWhenTwoDaysAreMissing = summary(
       [

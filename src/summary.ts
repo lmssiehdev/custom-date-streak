@@ -13,8 +13,9 @@ export function summary(
   const result = sortedDates.reduce(
     (prev, curr, index) => {
       const firstDate = new Date(curr);
-      const __nextV = dateParams[index + 1];
-      const nextDate = __nextV ? new Date(__nextV) : firstDate;
+      const nextDate = dateParams[index + 1]
+        ? new Date(dateParams[index + 1]!)
+        : firstDate;
 
       const isToday = differenceInDays(firstDate, today) === 0;
       const isYesterday = differenceInDays(firstDate, yesterday) === 0;
@@ -22,7 +23,10 @@ export function summary(
 
       const diff = differenceInDays(nextDate, firstDate);
 
-      const currentStreak = prev.streaks[prev.streaks.length - 1] ?? 0;
+      const currentStreak =
+        isToday || isYesterday || isInFuture
+          ? prev.streaks[prev.streaks.length - 1]!
+          : 0;
 
       if (typeof callback !== "function") {
         if (diff === 0) {
@@ -57,9 +61,12 @@ export function summary(
       isInFuture: false,
       isYesterday: false,
       isToday: false,
+      // withinCurrentStreak: false,
       // todayInStreak: false,
     }
   );
 
-  return result;
+  const { isToday, isYesterday, isInFuture, ...rest } = result;
+
+  return rest;
 }
